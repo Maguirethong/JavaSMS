@@ -44,9 +44,7 @@ public class ClientHandler implements Runnable {
                             if (p.length == 3 && db.checkLogin(p[1], p[2])) {
                                 username = p[1];
                                 server.addOnlineUser(username, this);
-                                // SỬA LỖI: Client mong đợi "LOGIN_SUCCESS:username"
                                 out.println("LOGIN_SUCCESS:" + username);
-                                // SỬA LỖI: Gửi danh sách nhóm ngay khi đăng nhập
                                 sendUserGroupsList();
                             } else {
                                 out.println("LOGIN_FAIL:Tên đăng nhập hoặc mật khẩu không chính xác.");
@@ -56,7 +54,7 @@ public class ClientHandler implements Runnable {
                     }
 
                     // Các lệnh yêu cầu đã đăng nhập
-                    if (line.startsWith("MSG:")) { // SỬA LỖI: Client gửi "MSG:", không phải "SEND:"
+                    if (line.startsWith("MSG:")) {
                         String[] p = line.split(":", 3);
                         String recipient = p[1];
                         String content = p[2];
@@ -68,7 +66,7 @@ public class ClientHandler implements Runnable {
                         // Gửi xác nhận cho người gửi (Client cần lệnh này)
                         out.println(String.format("MSG_SENT:%s:%s:%s", recipient, timestamp, content));
 
-                    } else if (line.startsWith("GROUP_MSG:")) { // SỬA LỖI: Client gửi "GROUP_MSG:", không phải "SEND_GROUP:"
+                    } else if (line.startsWith("GROUP_MSG:")) {
                         String[] parts = line.split(":", 3);
                         String group = parts[1];
                         String msg = parts[2];
@@ -98,11 +96,7 @@ public class ClientHandler implements Runnable {
                             out.println("SERVER_MSG:Vào nhóm thất bại (nhóm không tồn tại).");
                         }
                     } else if (line.equals("LIST_GROUPS")) {
-                        // SỬA LỖI: Gửi theo định dạng client mong muốn
                         sendUserGroupsList1();
-
-                        // --- SỬA LỖI: Thêm các handler còn thiếu ---
-
                     } else if (line.equals("ONLINE")) {
                          server.sendOnlineListToRequester(username);
 
@@ -181,6 +175,7 @@ public class ClientHandler implements Runnable {
                             this.status = newStatus.trim();
                         }
                         out.println("SERVER_MSG:Đã cập nhật trạng thái thành: " + this.status);
+                        server.broadcastOnlineUsers();
                     }
 
                 } catch (SQLException e) {
