@@ -63,6 +63,10 @@ public class ChatClientGUI extends Application {
                 .forEach(button -> button.setMaxWidth(Double.MAX_VALUE));
         VBox commandButtons = new VBox(5, onlineButton, listGroupsButton, listMembersButton, new Separator(), joinGroupButton, leaveGroupButton, setStatusButton, new Separator(), createGroupButton, inviteUserButton, kickUserButton);
         VBox leftPanel = new VBox(10, new Label("Online Users:"), onlineUsersList, new Label("My Groups:"), myGroupsList, new Separator(), new Label("Chức năng:"), commandButtons);
+        leftPanel.setOnMouseClicked(event -> {
+            onlineUsersList.getSelectionModel().clearSelection();
+            myGroupsList.getSelectionModel().clearSelection();
+        });
         leftPanel.setPadding(new Insets(10));
         leftPanel.setPrefWidth(200);
         VBox.setVgrow(onlineUsersList, Priority.ALWAYS);
