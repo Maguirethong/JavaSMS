@@ -17,6 +17,7 @@ import javax.net.ssl.*;
 import java.security.KeyStore;
 import java.io.FileInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 
 public class ChatClientGUI extends Application {
 
