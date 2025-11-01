@@ -26,11 +26,9 @@ public class ChatServer {
         }
     }
 
-    // SỬA LỖI: Đổi tên và thay đổi logic để khớp với client
     public void sendPrivateMessage(String sender, String receiver, String timestamp, String msg) {
         ClientHandler ch = onlineClients.get(receiver);
         if (ch != null) {
-            // Cú pháp client mong đợi: PRIVATE_MSG:SENDER:TIMESTAMP:MESSAGE
             ch.send(String.format("PRIVATE_MSG:%s:%s:%s", sender, timestamp, msg));
         }
     }
@@ -45,16 +43,13 @@ public class ChatServer {
         broadcastOnlineUsers(); // SỬA LỖI: Cập nhật danh sách cho mọi người
     }
 
-    // SỬA LỖI: Cập nhật chữ ký và logic để khớp với client
     public void sendGroupMessage(String group, String member, String sender, String timestamp, String msg) {
         ClientHandler ch = onlineClients.get(member);
         if (ch != null) {
-            // Cú pháp client mong đợi: GROUP_MSG:GROUP:SENDER:TIMESTAMP:MESSAGE
             ch.send(String.format("GROUP_MSG:%s:%s:%s:%s", group, sender, timestamp, msg));
         }
     }
 
-    // SỬA LỖI: Thêm phương thức broadcast danh sách user
     public void broadcastOnlineUsers() {
         String userList = String.join(",", onlineClients.keySet());
         String msg = "USER_LIST_UPDATE:" + userList;
@@ -63,21 +58,35 @@ public class ChatServer {
         }
     }
 
-    // SỬA LỖI: Thêm phương thức gửi thông báo typing
     public void sendTypingNotification(String sender, String recipient, String status) {
         ClientHandler ch = onlineClients.get(recipient);
         if (ch != null) {
             ch.send(String.format("TYPING_NOTIF:%s:%s", sender, status));
         }
     }
-
-    // SỬA LỖI: Thêm phương thức helper để lấy handler
+    public void sendOnlineListToRequester(String requesterUsername) {
+        ClientHandler ch = onlineClients.get(requesterUsername);
+        if (ch == null) return;
+    
+        String userListStr = onlineClients.keySet().stream()
+                            .filter(u -> !u.equals(requesterUsername))
+                            .collect(Collectors.joining(","));
+        String serverMessage;
+        if (userListStr.isEmpty()) {
+            serverMessage = "SERVER_MSG:Không có người dùng nào khác đang online.";
+        } else {
+            String userListReadable = onlineClients.keySet().stream()
+                                        .filter(u -> !u.equals(requesterUsername))
+                                        .collect(Collectors.joining(", "));
+            serverMessage = "SERVER_MSG:Các user đang online: " + userListReadable;
+        }
+        ch.send(serverMessage);
+    }
     public ClientHandler getClientHandler(String username) {
         return onlineClients.get(username);
     }
 
     public static void main(String[] args) throws Exception {
-        // Hãy chắc chắn rằng DB 'chat_db' đã được tạo và tài khoản/mật khẩu là chính xác
         DBHelper db = new DBHelper("jdbc:mysql://localhost:3306/chat_db", "root", "123456");
         new ChatServer(5000, db).start();
     }
