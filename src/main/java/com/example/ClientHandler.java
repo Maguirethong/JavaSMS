@@ -58,7 +58,7 @@ public class ClientHandler implements Runnable {
                         String[] p = line.split(":", 3);
                         String recipient = p[1];
                         String content = p[2];
-                        String timestamp = new SimpleDateFormat("HH:mm:ss").format(new Date());
+                        String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date());
 
                         db.saveMessage(username, recipient, content);
                         // Gửi cho người nhận
@@ -70,7 +70,7 @@ public class ClientHandler implements Runnable {
                         String[] parts = line.split(":", 3);
                         String group = parts[1];
                         String msg = parts[2];
-                        String timestamp = new SimpleDateFormat("HH:mm:ss").format(new Date());
+                        String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date());
 
                         db.saveGroupMessage(group, username, msg);
                         for (String member : db.getGroupMembers(group)) {
