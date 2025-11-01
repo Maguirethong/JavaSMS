@@ -119,7 +119,16 @@ public class ChatClientGUI extends Application {
         createGroupButton.setOnAction(e -> handleCreateGroup());
         inviteUserButton.setOnAction(e -> handleInviteUser());
         kickUserButton.setOnAction(e -> handleKickUser());
-        onlineUsersList.setOnMouseClicked(e -> { if (e.getClickCount() == 2) { String u = onlineUsersList.getSelectionModel().getSelectedItem(); if (u != null) openChatTab(u, true); }});
+        onlineUsersList.setOnMouseClicked(e -> { 
+            if (e.getClickCount() == 2) { 
+                String selectedItem = onlineUsersList.getSelectionModel().getSelectedItem(); 
+                if (selectedItem != null) {
+                    // Tách chuỗi "username (status)" để lấy "username"
+                    String targetUser = selectedItem.split(" \\(")[0].trim();
+                    openChatTab(targetUser, true); 
+                }
+            }
+        });
         myGroupsList.setOnMouseClicked(e -> { if (e.getClickCount() == 2) { String g = myGroupsList.getSelectionModel().getSelectedItem(); if (g != null) openChatTab(g, true); }});
         mainTabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab != null) {
@@ -368,22 +377,24 @@ public class ChatClientGUI extends Application {
     }
 
     private void handleInviteUser() {
-        String selectedUser = onlineUsersList.getSelectionModel().getSelectedItem();
+        String selectedItem = onlineUsersList.getSelectionModel().getSelectedItem();
         String selectedGroup = myGroupsList.getSelectionModel().getSelectedItem();
-        if (selectedUser == null || selectedGroup == null) {
+        if (selectedItem == null || selectedGroup == null) {
             appendMessageToArea("SERVER", "Mời thất bại: Vui lòng chọn một người dùng và một nhóm.", false);
             return;
         }
+        String selectedUser = selectedItem.split(" \\(")[0].trim();
         sendMessageToServer(String.format("INVITE_USER:%s:%s", selectedGroup, selectedUser));
     }
 
     private void handleKickUser() {
-        String selectedUser = onlineUsersList.getSelectionModel().getSelectedItem();
+        String selectedItem = onlineUsersList.getSelectionModel().getSelectedItem();
         String selectedGroup = myGroupsList.getSelectionModel().getSelectedItem();
-        if (selectedUser == null || selectedGroup == null) {
+        if (selectedItem == null || selectedGroup == null) {
             appendMessageToArea("SERVER", "Kick User: Vui lòng chọn một nhóm và một người dùng để xóa.", false);
             return;
         }
+        String selectedUser = selectedItem.split(" \\(")[0].trim();
         sendMessageToServer(String.format("KICK_USER:%s:%s", selectedGroup, selectedUser));
     }
 
