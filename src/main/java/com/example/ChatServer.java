@@ -2,9 +2,11 @@ package com.example;
 
 import java.io.*;
 import java.net.*;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.net.ssl.*;
+import java.security.KeyStore;
+import java.io.FileInputStream;
 
 public class ChatServer {
     private final int port;
@@ -15,13 +17,46 @@ public class ChatServer {
         this.port = port;
         this.db = db;
     }
+    private SSLContext createSSLContext() throws Exception {
+        // 1. Tải KeyStore của Server (chứa khóa riêng)
+        char[] password = "123456".toCharArray();
+        KeyStore ks = KeyStore.getInstance("JKS");
+        // Đảm bảo tệp "server.jks" nằm ở thư mục gốc của dự án
+        try (FileInputStream fis = new FileInputStream("server.jks")) {
+            ks.load(fis, password);
+        }
 
-    public void start() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Chat server started on port " + port);
+        // 2. Thiết lập KeyManagerFactory
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, password);
+
+        // 3. Khởi tạo SSLContext
+        SSLContext sslContext = SSLContext.getInstance("TLS"); // Dùng TLS
+        sslContext.init(kmf.getKeyManagers(), null, null);
+        
+        return sslContext;
+    }
+    public void start() throws Exception { // Sửa: throws Exception
+        
+        // 1. Khởi tạo SSL Context
+        SSLContext sslContext;
+        try {
+            sslContext = createSSLContext();
+        } catch (Exception e) {
+            System.err.println("Không thể tạo SSL Context: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+
+        // 2. Lấy SSL Server Socket Factory
+        SSLServerSocketFactory ssf = sslContext.getServerSocketFactory();
+        
+        // 3. Tạo SSL Server Socket thay vì ServerSocket thường
+        ServerSocket serverSocket = ssf.createServerSocket(port);
+        System.out.println("Chat server (SSL) started on port " + port);
 
         while (true) {
-            Socket socket = serverSocket.accept();
+            Socket socket = serverSocket.accept(); // Sẽ tự động trả về một SSLSocket
             new Thread(new ClientHandler(socket, this, db)).start();
         }
     }
