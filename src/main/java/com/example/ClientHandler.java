@@ -176,6 +176,9 @@ public class ClientHandler implements Runnable {
                         }
                         out.println("SERVER_MSG:Đã cập nhật trạng thái thành: " + this.status);
                         server.broadcastOnlineUsers();
+                    }else if (line.equals("LOGOUT")) {
+                        out.println("SERVER_MSG:Bạn đã đăng xuất.");
+                        break;
                     }
 
                 } catch (SQLException e) {
