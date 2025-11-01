@@ -132,7 +132,7 @@ public class DBHelper {
 
     // SỬA LỖI: Thêm phương thức lấy lịch sử chat 1-1
     public String getPrivateHistory(String user1, String user2) throws SQLException {
-        String sql = "SELECT sender, content, DATE_FORMAT(sent_at, '%H:%i:%s') as time " +
+        String sql = "SELECT sender, content, DATE_FORMAT(sent_at, '%d/%m/%Y %H:%i:%s') as time " +
                 "FROM messages " +
                 "WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?) " +
                 "ORDER BY sent_at ASC LIMIT 100";
@@ -155,7 +155,7 @@ public class DBHelper {
 
     // SỬA LỖI: Thêm phương thức lấy lịch sử chat nhóm
     public String getGroupHistory(String groupName, String currentUsername) throws SQLException {
-        String sql = "SELECT gm.sender, gm.content, DATE_FORMAT(gm.sent_at, '%H:%i:%s') as time " +
+        String sql = "SELECT gm.sender, gm.content, DATE_FORMAT(gm.sent_at, '%d/%m/%Y %H:%i:%s') as time " +
                 "FROM group_messages gm " +
                 "JOIN chat_groups g ON g.group_id = gm.group_id " +
                 "WHERE g.group_name = ? " +
