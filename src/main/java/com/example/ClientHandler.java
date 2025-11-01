@@ -29,8 +29,6 @@ public class ClientHandler implements Runnable {
 
             String line;
             while ((line = in.readLine()) != null) {
-                // SỬA LỖI: Bọc các lệnh yêu cầu DB trong try-catch riêng
-                // để một lệnh lỗi không ngắt kết nối của client.
                 try {
                     if (username == null) {
                         // Chỉ cho phép LOGIN hoặc REGISTER nếu chưa đăng nhập
@@ -106,7 +104,7 @@ public class ClientHandler implements Runnable {
                         // --- SỬA LỖI: Thêm các handler còn thiếu ---
 
                     } else if (line.equals("ONLINE")) {
-                        server.broadcastOnlineUsers();
+                         server.sendOnlineListToRequester(username);
 
                     } else if (line.startsWith("LIST_GROUP_MEMBERS:")) {
                         String groupName = line.split(":", 2)[1];
@@ -200,13 +198,12 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    // SỬA LỖI: Thêm phương thức helper để gửi danh sách nhóm
     private void sendUserGroupsList() {
         if (username == null) return;
         try {
             List<String> groups = db.listGroups(username);
-            // Cú pháp client mong đợi: USER_GROUPS_UPDATE:group1,group2
-            out.println("USER_GROUPS_UPDATE:" + String.join(",", groups));
+              out.println("SERVER_MSG:Các nhóm của bạn: " + String.join(",", groups));
+
         } catch (SQLException e) {
             out.println("SERVER_MSG:Lỗi khi lấy danh sách nhóm: " + e.getMessage());
         }
