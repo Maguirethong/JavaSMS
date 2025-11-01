@@ -51,7 +51,13 @@ public class ChatServer {
     }
 
     public void broadcastOnlineUsers() {
-        String userList = String.join(",", onlineClients.keySet());
+        List<String> usersWithStatus = new ArrayList<>();
+        for (Map.Entry<String, ClientHandler> entry : onlineClients.entrySet()) {
+            String username = entry.getKey();
+            String status = entry.getValue().getStatus(); 
+            usersWithStatus.add(String.format("%s (%s)", username, status)); // VD: "hieu (Đang bận)"
+        }
+        String userList = String.join(",", usersWithStatus);
         String msg = "USER_LIST_UPDATE:" + userList;
         for (ClientHandler ch : onlineClients.values()) {
             ch.send(msg);
@@ -67,17 +73,20 @@ public class ChatServer {
     public void sendOnlineListToRequester(String requesterUsername) {
         ClientHandler ch = onlineClients.get(requesterUsername);
         if (ch == null) return;
-    
-        String userListStr = onlineClients.keySet().stream()
-                            .filter(u -> !u.equals(requesterUsername))
-                            .collect(Collectors.joining(","));
+        List<String> usersWithStatus = new ArrayList<>();
+        for (Map.Entry<String, ClientHandler> entry : onlineClients.entrySet()) {
+            String username = entry.getKey();
+            String status = entry.getValue().getStatus(); 
+            usersWithStatus.add(String.format("%s (%s)", username, status)); // VD: "hieu (Đang bận)"
+        }
+        String userListStr = String.join(",", usersWithStatus);
+        ch.send("USER_LIST_UPDATE:" + userListStr);
         String serverMessage;
-        if (userListStr.isEmpty()) {
+        if (usersWithStatus.isEmpty()) {
             serverMessage = "SERVER_MSG:Không có người dùng nào khác đang online.";
         } else {
-            String userListReadable = onlineClients.keySet().stream()
-                                        .filter(u -> !u.equals(requesterUsername))
-                                        .collect(Collectors.joining(", "));
+            // Dùng ", " để danh sách in ra tab Server đẹp hơn
+            String userListReadable = String.join(", ", usersWithStatus);
             serverMessage = "SERVER_MSG:Các user đang online: " + userListReadable;
         }
         ch.send(serverMessage);
