@@ -14,7 +14,7 @@ public class ClientHandler implements Runnable {
     private BufferedReader in;
     private PrintWriter out;
     private String username = null;
-
+    private String status = "Đang rảnh";
     public ClientHandler(Socket socket, ChatServer server, DBHelper db) {
         this.socket = socket;
         this.server = server;
@@ -174,7 +174,13 @@ public class ClientHandler implements Runnable {
                             out.println("SERVER_MSG:Xóa thất bại (người dùng không ở trong nhóm).");
                         }
                     } else if (line.startsWith("SET_STATUS:")) {
-                        out.println("SERVER_MSG:Đã cập nhật trạng thái (tính năng đang phát triển).");
+                        String newStatus = line.split(":", 2)[1];
+                        if (newStatus == null || newStatus.trim().isEmpty()) {
+                            this.status = "Online";
+                        } else {
+                            this.status = newStatus.trim();
+                        }
+                        out.println("SERVER_MSG:Đã cập nhật trạng thái thành: " + this.status);
                     }
 
                 } catch (SQLException e) {
@@ -219,5 +225,8 @@ public class ClientHandler implements Runnable {
     }
     public void send(String msg) {
         out.println(msg);
+    }
+    public String getStatus() {
+        return this.status;
     }
 }
