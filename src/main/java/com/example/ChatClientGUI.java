@@ -13,6 +13,10 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.net.ssl.*;
+import java.security.KeyStore;
+import java.io.FileInputStream;
+import java.io.File;
 
 public class ChatClientGUI extends Application {
 
@@ -39,11 +43,52 @@ public class ChatClientGUI extends Application {
     private boolean isTyping = false;
     private Timer typingTimer = new Timer(true);
     private volatile boolean isLoggingOut = false;
+    private SSLSocketFactory sslSocketFactory;
+    private SSLContext createSSLContext() throws Exception {
+        // 1. Tải TrustStore của Client (chứa cert công khai của server)
+        char[] password = "123456".toCharArray();
+        KeyStore ts = KeyStore.getInstance("JKS");
+        // Đảm bảo tệp "client.jks" nằm ở thư mục gốc của dự án
+        try (FileInputStream fis = new FileInputStream("client.jks")) {
+            ts.load(fis, password);
+        }
+
+        // 2. Thiết lập TrustManagerFactory
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        tmf.init(ts);
+
+        // 3. Khởi tạo SSLContext
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, tmf.getTrustManagers(), null); // Chỉ cần TrustManager
+        
+        return sslContext;
+    }
     public static void main(String[] args) {
         launch(args);
     }
     @Override
     public void start(Stage stage) {
+        // --- KHỞI TẠO SSL FACTORY (THÊM MỚI) ---
+        try {
+            if (!new File("client.jks").exists()) {
+                 throw new FileNotFoundException("Không tìm thấy tệp 'client.jks'.");
+            }
+            SSLContext sslContext = createSSLContext();
+            this.sslSocketFactory = sslContext.getSocketFactory();
+        } catch (Exception e) {
+            System.err.println("Không thể tạo SSL Context cho client: " + e.getMessage());
+            e.printStackTrace();
+            // Hiển thị lỗi và thoát
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Lỗi Bảo Mật");
+                alert.setHeaderText("Không thể tải TrustStore (client.jks).");
+                alert.setContentText("Hãy chắc chắn tệp client.jks (mật khẩu 123456) nằm ở thư mục gốc của ứng dụng.\nLỗi: " + e.getMessage());
+                alert.showAndWait();
+                Platform.exit();
+            });
+            return;
+        }
         this.primaryStage = stage;
         primaryStage.setTitle("Ứng Dụng Chat");
         BorderPane mainLayout = new BorderPane();
@@ -457,9 +502,14 @@ public class ChatClientGUI extends Application {
 
     private void connectToServer() {
         try {
-            socket = new Socket(SERVER_IP, SERVER_PORT);
+            socket = (SSLSocket) sslSocketFactory.createSocket(SERVER_IP, SERVER_PORT);
+            
+            // Bắt đầu handshake (tùy chọn nhưng nên làm)
+            ((SSLSocket) socket).startHandshake();
+
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            
             Thread receiverThread = new Thread(() -> {
                 try {
                     String serverResponse;
@@ -467,15 +517,18 @@ public class ChatClientGUI extends Application {
                         processServerResponse(serverResponse);
                     }
                 } catch (IOException e) {
-                    if(!isLoggingOut) Platform.runLater(() -> appendMessageToArea("SERVER", "Mất kết nối với server.", true));
+                    if (!isLoggingOut) {
+                        Platform.runLater(() -> appendMessageToArea("SERVER", "Mất kết nối với server.", true));
+                    }
                 } finally {
                     cleanup();
                 }
             });
             receiverThread.setDaemon(true);
             receiverThread.start();
+            
         } catch (IOException e) {
-            Platform.runLater(() -> appendMessageToArea("SERVER", "Không thể kết nối tới server: " + e.getMessage(), false));
+            Platform.runLater(() -> appendMessageToArea("SERVER", "Không thể kết nối tới server (SSL): " + e.getMessage(), false));
         }
     }
 
