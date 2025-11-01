@@ -99,7 +99,7 @@ public class ClientHandler implements Runnable {
                         }
                     } else if (line.equals("LIST_GROUPS")) {
                         // SỬA LỖI: Gửi theo định dạng client mong muốn
-                        sendUserGroupsList();
+                        sendUserGroupsList1();
 
                         // --- SỬA LỖI: Thêm các handler còn thiếu ---
 
@@ -198,17 +198,25 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void sendUserGroupsList() {
+    private void sendUserGroupsList1() {
         if (username == null) return;
         try {
             List<String> groups = db.listGroups(username);
-              out.println("SERVER_MSG:Các nhóm của bạn: " + String.join(",", groups));
-
+            out.println("SERVER_MSG:Các nhóm của bạn: " + String.join(",", groups));
+            out.println("USER_GROUPS_UPDATE:" + String.join(",", groups));
         } catch (SQLException e) {
             out.println("SERVER_MSG:Lỗi khi lấy danh sách nhóm: " + e.getMessage());
         }
     }
-
+    private void sendUserGroupsList() {
+        if (username == null) return;
+        try {
+            List<String> groups = db.listGroups(username);
+            out.println("USER_GROUPS_UPDATE:" + String.join(",", groups));
+        } catch (SQLException e) {
+            out.println("SERVER_MSG:Lỗi khi lấy danh sách nhóm: " + e.getMessage());
+        }
+    }
     public void send(String msg) {
         out.println(msg);
     }
