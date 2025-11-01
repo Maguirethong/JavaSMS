@@ -38,6 +38,7 @@ public class ChatClientGUI extends Application {
 
     private boolean isTyping = false;
     private Timer typingTimer = new Timer(true);
+    private volatile boolean isLoggingOut = false;
     public static void main(String[] args) {
         launch(args);
     }
@@ -59,9 +60,10 @@ public class ChatClientGUI extends Application {
         Button createGroupButton = new Button("➕ Tạo Nhóm Mới");
         Button inviteUserButton = new Button("📧 Mời vào Nhóm");
         Button kickUserButton = new Button("🚫 Kick User");
-        Arrays.asList(onlineButton, listGroupsButton, listMembersButton, joinGroupButton, leaveGroupButton, setStatusButton, createGroupButton, inviteUserButton, kickUserButton)
+        Button logoutButton = new Button("⬅️ Đăng Xuất");
+        Arrays.asList(onlineButton, listGroupsButton, listMembersButton, joinGroupButton, leaveGroupButton, setStatusButton, createGroupButton, inviteUserButton, kickUserButton, logoutButton)
                 .forEach(button -> button.setMaxWidth(Double.MAX_VALUE));
-        VBox commandButtons = new VBox(5, onlineButton, listGroupsButton, listMembersButton, new Separator(), joinGroupButton, leaveGroupButton, setStatusButton, new Separator(), createGroupButton, inviteUserButton, kickUserButton);
+        VBox commandButtons = new VBox(5, onlineButton, listGroupsButton, listMembersButton, new Separator(), joinGroupButton, leaveGroupButton, setStatusButton, new Separator(), createGroupButton, inviteUserButton, kickUserButton, logoutButton);
         VBox leftPanel = new VBox(10, new Label("Online Users:"), onlineUsersList, new Label("My Groups:"), myGroupsList, new Separator(), new Label("Chức năng:"), commandButtons);
         leftPanel.setOnMouseClicked(event -> {
             onlineUsersList.getSelectionModel().clearSelection();
@@ -119,6 +121,7 @@ public class ChatClientGUI extends Application {
         createGroupButton.setOnAction(e -> handleCreateGroup());
         inviteUserButton.setOnAction(e -> handleInviteUser());
         kickUserButton.setOnAction(e -> handleKickUser());
+        logoutButton.setOnAction(e -> handleLogout());
         onlineUsersList.setOnMouseClicked(e -> { 
             if (e.getClickCount() == 2) { 
                 String selectedItem = onlineUsersList.getSelectionModel().getSelectedItem(); 
@@ -464,7 +467,7 @@ public class ChatClientGUI extends Application {
                         processServerResponse(serverResponse);
                     }
                 } catch (IOException e) {
-                    Platform.runLater(() -> appendMessageToArea("SERVER", "Mất kết nối với server.", true));
+                    if(!isLoggingOut) Platform.runLater(() -> appendMessageToArea("SERVER", "Mất kết nối với server.", true));
                 } finally {
                     cleanup();
                 }
@@ -487,5 +490,15 @@ public class ChatClientGUI extends Application {
     private void cleanup() {
         try { if (socket != null && !socket.isClosed()) socket.close(); } catch (IOException e) {}
         Platform.runLater(() -> updateLoginUI(false));
+        currentUsername = "";
+        isLoggingOut = false;
+    }
+    private void handleLogout() {
+        if (out != null) {
+            isLoggingOut = true;
+            sendMessageToServer("LOGOUT");
+        }
+        cleanup();
+        connectToServer();
     }
 }
