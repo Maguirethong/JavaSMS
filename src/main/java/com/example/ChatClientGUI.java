@@ -176,14 +176,6 @@ public class ChatClientGUI extends Application {
         sendMessageToServer("GET_HISTORY:" + targetName);
     }
 
-    // SỬA LỖI: Luôn hiển thị tin nhắn mới
-    // Ghi chú: Logic ở đây là ĐÚNG, với điều kiện là server PHẢI
-    // 1. Lưu tin nhắn vào DB
-    // 2. Gửi tin nhắn (PRIVATE_MSG / GROUP_MSG)
-    // 3. Client nhận tin, mở tab, và gửi GET_HISTORY
-    // 4. Server nhận GET_HISTORY và trả về lịch sử (bao gồm cả tin nhắn mới)
-    // 5. Client bỏ qua việc append (vì !isNewTab là false) và chờ CHAT_HISTORY.
-    // Lỗi gốc là do Server không bao giờ xử lý GET_HISTORY.
     private void appendMessageToArea(String target, String message, boolean isNotification) {
         Platform.runLater(() -> {
             boolean isNewTab = !chatTabs.containsKey(target);
@@ -249,43 +241,39 @@ public class ChatClientGUI extends Application {
                     }
                     break;
                 }
-                case "PRIVATE_MSG": {
-                    // SỬA LỖI: Cú pháp là CMD:SENDER:TIMESTAMP:MESSAGE (4 phần)
-                    // Logic cũ (split 5) sẽ lỗi nếu timestamp là HH:mm:ss
-                    String[] msgParts = response.split(":", 4); // Sửa từ 5 thành 4
-                    if (msgParts.length == 4) { // Sửa từ 5 thành 4
-                        String sender = msgParts[1];
-                        String timestamp = msgParts[2]; // Sửa (không cần ghép)
-                        String message = msgParts[3]; // Sửa từ 4 thành 3
-                        appendMessageToArea(sender, String.format("(%s) [%s]: %s", timestamp, sender, message), true);
-                    }
-                    break;
+            case "PRIVATE_MSG": {
+                String[] msgParts = response.split(":", 5);
+                if (msgParts.length == 5) {
+                    String sender = msgParts[1];
+                    String timestamp = msgParts[2] + ":" + msgParts[3];
+                    String message = msgParts[4];
+                    appendMessageToArea(sender, String.format("(%s) [%s]: %s", timestamp, sender, message), true);
                 }
-                case "MSG_SENT": { // Cú pháp: CMD:RECIPIENT:TIMESTAMP:MESSAGE (4 phần)
-                    // SỬA LỖI: Logic tương tự như PRIVATE_MSG
-                    String[] msgParts = response.split(":", 4); // Sửa từ 5 thành 4
-                    if (msgParts.length == 4) { // Sửa từ 5 thành 4
-                        String recipient = msgParts[1];
-                        String timestamp = msgParts[2]; // Sửa
-                        String message = msgParts[3]; // Sửa từ 4 thành 3
-                        appendMessageToArea(recipient, String.format("(%s) [Bạn]: %s", timestamp, message), false);
-                    }
-                    break;
+                break;
+            }
+            case "MSG_SENT": {
+                String[] msgParts = response.split(":", 5);
+                if (msgParts.length == 5) {
+                    String recipient = msgParts[1];
+                    String timestamp = msgParts[2] + ":" + msgParts[3];
+                    String message = msgParts[4];
+                    appendMessageToArea(recipient, String.format("(%s) [Bạn]: %s", timestamp, message), false);
                 }
-                case "GROUP_MSG": {
-                    // SỬA LỖI: Cú pháp: CMD:GROUP:SENDER:TIMESTAMP:MESSAGE (5 phần)
-                    String[] msgParts = response.split(":", 5); // Sửa từ 6 thành 5
-                    if (msgParts.length == 5) { // Sửa từ 6 thành 5
-                        String groupName = msgParts[1];
-                        String sender = msgParts[2];
-                        String timestamp = msgParts[3]; // Sửa
-                        String message = msgParts[4]; // Sửa từ 5 thành 4
-                        boolean isNotification = !sender.equals(currentUsername);
-                        String formattedSender = isNotification ? sender : "Bạn";
-                        appendMessageToArea(groupName, String.format("(%s) [%s]: %s", timestamp, formattedSender, message), isNotification);
-                    }
-                    break;
+                break;
+            }
+            case "GROUP_MSG": {
+                String[] msgParts = response.split(":", 6);
+                if (msgParts.length == 6) {
+                    String groupName = msgParts[1];
+                    String sender = msgParts[2];
+                    String timestamp = msgParts[3] + ":" + msgParts[4];
+                    String message = msgParts[5];
+                    boolean isNotification = !sender.equals(currentUsername);
+                    String formattedSender = isNotification ? sender : "Bạn";
+                    appendMessageToArea(groupName, String.format("(%s) [%s]: %s", timestamp, formattedSender, message), isNotification);
                 }
+                break;
+            }
                 case "CHAT_HISTORY": {
                     String[] historyParts = response.split(":", 3);
                     TextArea area = chatAreas.get(historyParts[1]);
