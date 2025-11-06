@@ -79,15 +79,23 @@ public class GroupManagementHandler {
         for (String member : members) {
             server.sendGroupMessage(groupName, member, sen, timestam, systemMes);
         }
-
+    
         if ("admin".equals(role)) {
             List<String> remainingAdmins = db.getGroupAdmins(groupName);
             if (remainingAdmins.isEmpty()) {
                 List<String> remainingMembers = db.getGroupMembers(groupName);
-                if (!remainingMembers.isEmpty() && !remainingMembers.get(0).equals("Hệ thống")) {
-                    String newAdmin = remainingMembers.get(0); 
+
+                // Bỏ qua "Hệ thống" và chọn user thực
+                String newAdmin = null;
+                for (String member : remainingMembers) {
+                    if (!"Hệ thống".equals(member)) {
+                        newAdmin = member;
+                        break;
+                    }
+                }
+
+                if (newAdmin != null) {
                     db.setGroupRole(newAdmin, groupName, "admin");
-                    
                     String systemMessage = newAdmin + " đã được tự động thăng làm admin mới.";
                     String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date());
                     db.saveGroupMessage(groupName, sen, systemMessage);
